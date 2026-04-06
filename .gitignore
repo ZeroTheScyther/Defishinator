@@ -2,3 +2,5 @@
 obj/
 bin/
 *.user
+depreps/
+dotnet-tools.json

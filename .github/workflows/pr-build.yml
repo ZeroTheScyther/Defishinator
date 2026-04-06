@@ -1,23 +1,21 @@
-name: Sample PR Builder for SamplePlugin
+name: Build
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
 jobs:
-
   build:
     runs-on: windows-2022
 
-    env:
-      Solution_Name: SamplePlugin
-
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v4
 
     - name: Install .NET
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
@@ -26,14 +24,13 @@ jobs:
         Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
         Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
 
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+    - name: Build
+      run: dotnet build Defishinator/Defishinator.csproj --configuration Release
 
-    - name: Store artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: SamplePlugin
-        path: .\SamplePlugin\bin\x64\Release\SamplePlugin\*
+        name: Defishinator
+        path: Defishinator/bin/Release/Defishinator/*
         if-no-files-found: error
-        retention-days: 1
-
+        retention-days: 7
