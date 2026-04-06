@@ -1,0 +1,18 @@
+{
+  "Author": "ZeroTheScyther",
+  "Name": "Defishinator",
+  "Punchline": "Desynthesises all the fish in your inventory.",
+  "Description": "Automatically desynthesises all Seafood-category items from your inventory. Supports bulk desynth for stacks. Use /defish to open the window.",
+  "InternalName": "Defishinator",
+  "AssemblyVersion": "1.0.0.0",
+  "RepoUrl": "https://github.com/ZeroTheScyther/Defishinator",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": 14,
+  "Tags": [
+    "desynth",
+    "fish",
+    "fishing",
+    "salvage",
+    "automation"
+  ]
+}
