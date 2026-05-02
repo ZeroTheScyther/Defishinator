@@ -20,7 +20,7 @@ https://raw.githubusercontent.com/ZeroTheScyther/Defishinator/master/repo.json
 
 ## Building
 
-Requires the [.NET 9 SDK](https://dotnet.microsoft.com/download) and a local Dalamud install.
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) and a local Dalamud install.
 
 ```bash
 dotnet build Defishinator/Defishinator.csproj
