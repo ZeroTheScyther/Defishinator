@@ -194,9 +194,12 @@ public class DesynthService : IDisposable
         if (componentNode == null || !((AtkResNode*)componentNode)->NodeFlags.HasFlag(NodeFlags.Visible))
             return;
 
-        // Tick the checkbox then fire Desynthesize. The game reads IsChecked from this node.
+        // Tick the checkbox (visual) AND set BulkDesynthEnabled. The Desynthesize handler reads
+        // the field, and a programmatic SetChecked does not raise the change event that would set
+        // it — so without this, stacks desynthed a single item instead of the whole stack.
         var checkbox = (AtkComponentCheckBox*)componentNode->Component;
         checkbox->SetChecked(true);
+        salvageDialog->BulkDesynthEnabled = true;
         salvageDialog->AtkUnitBase.FireCallbackInt(0);
         _state = State.WaitingForResult;
     }
@@ -210,25 +213,29 @@ public class DesynthService : IDisposable
         }
     }
 
-    private void OnWaitingForOccupiedToClear(long now)
+    private unsafe void OnWaitingForOccupiedToClear(long now)
     {
         // Bulk desynth processes all items in the stack sequentially; wait until the game
-        // clears Occupied39 before starting the next slot.
+        // clears Occupied39, then close the now-finished auto-dialog before the next slot.
         if (Plugin.Condition[ConditionFlag.Occupied39]) return;
+
+        var addonPtr = (nint)Plugin.GameGui.GetAddonByName("SalvageAutoDialog");
+        if (addonPtr != nint.Zero)
+            ((AtkUnitBase*)addonPtr)->Close(true);
+
         AdvanceQueue(now);
     }
 
     /// <summary>
     /// Fires when SalvageAutoDialog (bulk result window) opens — close it and wait for occupied to clear.
     /// </summary>
-    private unsafe void OnSalvageAutoDialogSetup(AddonEvent eventType, AddonArgs addonInfo)
+    private void OnSalvageAutoDialogSetup(AddonEvent eventType, AddonArgs addonInfo)
     {
         if (_state != State.WaitingForResult) return;
 
-        var addonPtr = (nint)Plugin.GameGui.GetAddonByName("SalvageAutoDialog");
-        if (addonPtr == nint.Zero) return;
-
-        ((AtkUnitBase*)addonPtr)->Close(true);
+        // Do NOT close it here — SalvageAutoDialog drives the sequential bulk desynth. Closing it
+        // on PostSetup stops the stack after the first item. Let it run; OnWaitingForOccupiedToClear
+        // closes it once the game clears Occupied39 (whole stack processed).
         _lastActionTick = Environment.TickCount64;
         _state = State.WaitingForOccupiedToClear;
     }
