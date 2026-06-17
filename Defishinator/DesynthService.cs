@@ -161,8 +161,8 @@ public class DesynthService : IDisposable
     }
 
     /// <summary>
-    /// Polls each frame until SalvageDialog is open. For bulk slots, also waits for the
-    /// "Desynthesize entire stack" checkbox (node 23) to become visible, then ticks it.
+    /// Polls each frame until SalvageDialog is open, then fires Desynthesize. For stacks it first
+    /// enables the "Desynthesize entire stack" checkbox (node 23).
     /// </summary>
     private unsafe void OnWaitingForSalvageDialog(long now)
     {
@@ -189,19 +189,43 @@ public class DesynthService : IDisposable
             return;
         }
 
-        // For stacks, wait until node 23 is visible (it initialises a frame or two after PostSetup).
+        // For stacks, wait until node 23 (the bulk checkbox) is visible, then enable it.
         var componentNode = (AtkComponentNode*)salvageDialog->AtkUnitBase.GetNodeById(BulkCheckboxNodeId);
         if (componentNode == null || !((AtkResNode*)componentNode)->NodeFlags.HasFlag(NodeFlags.Visible))
             return;
 
-        // Tick the checkbox (visual) AND set BulkDesynthEnabled. The Desynthesize handler reads
-        // the field, and a programmatic SetChecked does not raise the change event that would set
-        // it — so without this, stacks desynthed a single item instead of the whole stack.
         var checkbox = (AtkComponentCheckBox*)componentNode->Component;
-        checkbox->SetChecked(true);
-        salvageDialog->BulkDesynthEnabled = true;
+        if (checkbox == null)
+        {
+            Plugin.Log.Warning("Bulk checkbox (node 23) has no component — desynthing single instead.");
+        }
+        else if (!checkbox->IsChecked && !EnableBulkCheckbox((AtkResNode*)componentNode, checkbox))
+        {
+            Plugin.Log.Warning("Could not engage bulk desynth — desynthing single instead.");
+        }
+
         salvageDialog->AtkUnitBase.FireCallbackInt(0);
         _state = State.WaitingForResult;
+    }
+
+    /// <summary>
+    /// Engages the bulk checkbox the same way a real click does. SetChecked alone is visual-only and
+    /// does NOT enable bulk — the game only sets the (persisted) bulk state inside the checkbox's
+    /// ButtonClick handler. So we tick the visual, then re-dispatch the node's own registered
+    /// ButtonClick event to its listener (the addon), which runs that handler. Returns true if the
+    /// checkbox ended up checked.
+    /// </summary>
+    private unsafe bool EnableBulkCheckbox(AtkResNode* node, AtkComponentCheckBox* checkbox)
+    {
+        checkbox->SetChecked(true);
+        for (var e = node->AtkEventManager.Event; e != null; e = e->NextEvent)
+        {
+            if (e->State.EventType != AtkEventType.ButtonClick) continue;
+            var data = new AtkEventData();
+            e->Listener->ReceiveEvent(AtkEventType.ButtonClick, (int)e->Param, e, &data);
+            break;
+        }
+        return checkbox->IsChecked;
     }
 
     private void OnWaitingForResult(long now)
