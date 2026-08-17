@@ -25,3 +25,5 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download) and a local Da
 ```bash
 dotnet build Defishinator/Defishinator.csproj
 ```
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G2FH11R)
